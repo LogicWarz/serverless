@@ -1,13 +1,12 @@
 'use strict';
 
 const acorn = require('acorn')
-const fs = require('fs')
 const astring = require('astring')
 const assert = require('assert')
 
 module.exports.parsingData = async event => {
   let data = event.body
-  let test = 0
+ 
 
   let testCase = [
     {
@@ -36,10 +35,9 @@ module.exports.parsingData = async event => {
     }
   ]
   
-
-  let astFunction = acorn.parse(data.input).body
-  const addFnNode = body.find(node => node.type === 'FunctionDeclaration' && node.id.name === 'well')
-  if (!addFnNode){
+  let astFunction = acorn.parse(data).body
+  const fnNode = astFunction.find(node => node.type === 'FunctionDeclaration' && node.id.name === 'well')
+  if (!fnNode){
     return {
       statusCode: 200,
       headers: {
@@ -57,7 +55,9 @@ module.exports.parsingData = async event => {
     };
   }
   
-  const logic = new Function(addFnNode.params[0].name, astring.generate(addFnNode.body))
+  const logic = new Function(fnNode.params[0].name, astring.generate(fnNode.body))
+
+  
 
   try {
     for (let i = 0; i < testCase.length; i++){
