@@ -15,7 +15,7 @@ module.exports.parsingData = async event => {
         ['bad', 'bAd', 'bad'],
         ['bad', 'bAd', 'bad']
       ],
-      output: "fail"
+      output: "Fail!"
     },
     {
       input: [
@@ -46,7 +46,7 @@ module.exports.parsingData = async event => {
       },
       body: JSON.stringify(
         {
-          message: 'Invalid Logic',
+          message: 'Name Function must be well',
           input: false,
         },
         null,
@@ -54,14 +54,36 @@ module.exports.parsingData = async event => {
       ),
     };
   }
+
+  let params = fnNode.params.map(param => param.name)
+
+
+  // return {
+  //   statusCode: 200,
+  //   headers: {
+  //     "Access-Control-Allow-Origin": "*",
+  //     "Access-Control-Allow-Origin-Credentials": true,
+  //   },
+  //   body: JSON.stringify(
+  //     {
+  //       message: 'Great, You Are The Winner',
+  //       input: params,
+  //     },
+  //     null,
+  //     2
+  //   ),
+  // };
   
-  const logic = new Function(fnNode.params[0].name, astring.generate(fnNode.body))
+  const logic = new Function(...params, astring.generate(fnNode.body))
 
   
 
   try {
     for (let i = 0; i < testCase.length; i++){
-      assert(logic(testCase[i].input))
+      let test = logic(testCase[i].input)
+      if(test !== testCase[i].output){
+        throw new Error("Error")
+      }
     }
 
     return {
