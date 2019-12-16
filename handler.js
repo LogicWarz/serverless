@@ -5,38 +5,20 @@ const astring = require('astring')
 const assert = require('assert')
 
 module.exports.parsingData = async event => {
-  let data = event.body
- 
+  let body = JSON.parse(event.body);
+  let data = body.code
 
-  let testCase = [
-    {
-      input: [
-        ['bad', 'bAd', 'bad'],
-        ['bad', 'bAd', 'bad'],
-        ['bad', 'bAd', 'bad']
-      ],
-      output: "Fail!"
-    },
-    {
-      input: [
-        ['gOOd', 'bad', 'BAD', 'bad', 'bad'],
-        ['bad', 'bAd', 'bad'],
-        ['GOOD', 'bad', 'bad', 'bAd']
-      ],
-      output: "Publish!"
-    },
-    {
-      input: [
-        ['gOOd', 'bAd', 'BAD', 'bad', 'bad', 'GOOD'],
-        ['bad'],
-        ['gOOd', 'BAD']
-      ],
-      output: "I smell a series!"
-    }
-  ]
+  let challenge = body.challenge
+  let skeletonCode = acorn.parse(challenge.skeletonCode).body
+  let nodeSkeleton = skeletonCode.find(node => node.type === 'FunctionDeclaration')
+  let functionName = nodeSkeleton.id.name
+  let testCase = challenge.testCase
+  
+  
   
   let astFunction = acorn.parse(data).body
-  const fnNode = astFunction.find(node => node.type === 'FunctionDeclaration' && node.id.name === 'well')
+  const fnNode = astFunction.find(node => node.type === 'FunctionDeclaration' && node.id.name === functionName )
+
   if (!fnNode){
     return {
       statusCode: 200,
@@ -46,7 +28,7 @@ module.exports.parsingData = async event => {
       },
       body: JSON.stringify(
         {
-          message: 'Name Function must be well',
+          message: 'Invalid Function Name',
           input: false,
         },
         null,
@@ -56,23 +38,6 @@ module.exports.parsingData = async event => {
   }
 
   let params = fnNode.params.map(param => param.name)
-
-
-  // return {
-  //   statusCode: 200,
-  //   headers: {
-  //     "Access-Control-Allow-Origin": "*",
-  //     "Access-Control-Allow-Origin-Credentials": true,
-  //   },
-  //   body: JSON.stringify(
-  //     {
-  //       message: 'Great, You Are The Winner',
-  //       input: params,
-  //     },
-  //     null,
-  //     2
-  //   ),
-  // };
   
   const logic = new Function(...params, astring.generate(fnNode.body))
 
@@ -80,7 +45,8 @@ module.exports.parsingData = async event => {
 
   try {
     for (let i = 0; i < testCase.length; i++){
-      let test = logic(testCase[i].input)
+      let testInput = testCase[i].input
+      let test = logic(...testInput)
       if(test !== testCase[i].output){
         throw new Error("Error")
       }
